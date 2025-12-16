@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitoramento – Ilha dos Lobos</title>
+
+  <!-- Responsividade -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet (mapa) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+    }
+
+    header {
+      background: #1e88e5;
+      color: white;
+      padding: 12px;
+      text-align: center;
+    }
+
+    #info {
+      padding: 10px;
+      background: white;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    #map {
+      height: 70vh;
+      width: 100%;
+    }
+
+    .status-dentro {
+      color: red;
+      font-weight: bold;
+    }
+
+    .status-fora {
+      color: green;
+      font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      #info {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h2>Sistema de Monitoramento – Ilha dos Lobos</h2>
+</header>
+
+<div id="info">
+  <div><strong>Latitude:</strong> <span id="lat">--</span></div>
+  <div><strong>Longitude:</strong> <span id="lon">--</span></div>
+  <div><strong>Distância da borda:</strong> <span id="dist">--</span> m</div>
+  <div><strong>Status:</strong> <span id="status">--</span></div>
+</div>
+
+<div id="map"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+  /* =========================================================
+     CONFIGURAÇÃO FIREBASE (AJUSTE COM SEUS DADOS)
+     ========================================================= */
+  const firebaseConfig = {
+    apiKey: "SUA_API_KEY",
+    authDomain: "ilhalobos-3ab8f.firebaseapp.com",
+    databaseURL: "https://ilhalobos-3ab8f-default-rtdb.firebaseio.com",
+    projectId: "ilhalobos-3ab8f",
+    storageBucket: "ilhalobos-3ab8f.appspot.com",
+    messagingSenderId: "XXXXXX",
+    appId: "XXXXXX"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  const database = firebase.database();
+  const ref = database.ref("embarcacoes/esp32_01");
+
+  /* =========================================================
+     MAPA
+     ========================================================= */
+  const map = L.map("map").setView([-29.3389, -49.7153], 13);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap"
+  }).addTo(map);
+
+  const marker = L.marker([-29.3389, -49.7153]).addTo(map);
+
+  /* Círculo da Ilha */
+  L.circle([-29.3389, -49.7153], {
+    radius: 1000,
+    color: "blue",
+    fillOpacity: 0.1
+  }).addTo(map);
+
+  /* =========================================================
+     ATUALIZAÇÃO EM TEMPO REAL
+     ========================================================= */
+  ref.on("value", snapshot => {
+    const data = snapshot.val();
+    if (!data) return;
+
+    document.getElementById("lat").innerText = data.lat.toFixed(6);
+    document.getElementById("lon").innerText = data.lon.toFixed(6);
+    document.getElementById("dist").innerText = data.distancia_borda.toFixed(1);
+
+    const statusEl = document.getElementById("status");
+    statusEl.innerText = data.status;
+
+    if (data.status === "DENTRO") {
+      statusEl.className = "status-dentro";
+    } else {
+      statusEl.className = "status-fora";
+    }
+
+    marker.setLatLng([data.lat, data.lon]);
+    map.setView([data.lat, data.lon], 15);
+  });
+</script>
+
+</body>
+</html>
