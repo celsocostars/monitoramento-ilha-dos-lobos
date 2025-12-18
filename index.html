@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Monitoramento – Últimas 20 Leituras</title>
+  <title>Monitoramento – Alertas</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -21,11 +20,18 @@
       text-align: center;
     }
 
+    .filtro {
+      padding: 8px;
+      background: white;
+      text-align: center;
+      font-size: 14px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       background: white;
-      margin-top: 10px;
+      margin-top: 5px;
       font-size: 14px;
     }
 
@@ -65,8 +71,15 @@
 <body>
 
 <header>
-  <h2>Últimas 20 Leituras – GPS</h2>
+  <h2>Últimas 20 Leituras – Alertas</h2>
 </header>
+
+<div class="filtro">
+  <label>
+    <input type="checkbox" id="filtroAlerta">
+    Mostrar somente ALERTAS (DENTRO)
+  </label>
+</div>
 
 <table>
   <thead>
@@ -74,13 +87,14 @@
       <th>#</th>
       <th>Latitude</th>
       <th>Longitude</th>
+      <th>Distância (m)</th>
       <th>Status</th>
       <th>Data / Hora</th>
     </tr>
   </thead>
   <tbody id="tabela-dados">
     <tr>
-      <td colspan="5">Carregando dados...</td>
+      <td colspan="6">Carregando dados...</td>
     </tr>
   </tbody>
 </table>
@@ -110,31 +124,40 @@ const historicoRef = database
   .ref("embarcacoes/esp32_01/historico")
   .limitToLast(20);
 
+let dadosCache = [];
+
 /* =========================================================
    ATUALIZAÇÃO EM TEMPO REAL
    ========================================================= */
 historicoRef.on("value", snapshot => {
 
+  dadosCache = [];
+
+  snapshot.forEach(child => {
+    dadosCache.push(child.val());
+  });
+
+  dadosCache.reverse(); // mais recente primeiro
+  atualizarTabela();
+});
+
+/* =========================================================
+   FILTRO DE ALERTA
+   ========================================================= */
+document.getElementById("filtroAlerta")
+  .addEventListener("change", atualizarTabela);
+
+function atualizarTabela() {
+
   const tbody = document.getElementById("tabela-dados");
   tbody.innerHTML = "";
 
-  if (!snapshot.exists()) {
-    tbody.innerHTML =
-      "<tr><td colspan='5'>Sem dados</td></tr>";
-    return;
-  }
-
-  const dados = [];
-  snapshot.forEach(child => {
-    dados.push(child.val());
-  });
-
-  /* Mais recente primeiro */
-  dados.reverse();
+  const somenteAlerta =
+    document.getElementById("filtroAlerta").checked;
 
   let contador = 1;
 
-  dados.forEach(linha => {
+  dadosCache.forEach(linha => {
 
     // Formato:
     // DATA | LAT | LON | DIST | STATUS
@@ -143,7 +166,11 @@ historicoRef.on("value", snapshot => {
     const dataHora = partes[0]?.trim() || "--";
     const lat = partes[1]?.trim() || "--";
     const lon = partes[2]?.trim() || "--";
+    const distancia = partes[3]?.trim() || "--";
     const status = partes[4]?.trim() || "--";
+
+    if (somenteAlerta && status !== "DENTRO")
+      return;
 
     const classeStatus =
       status === "DENTRO" ? "dentro" : "fora";
@@ -153,6 +180,7 @@ historicoRef.on("value", snapshot => {
       <td>${contador}</td>
       <td>${lat}</td>
       <td>${lon}</td>
+      <td>${distancia}</td>
       <td class="${classeStatus}">${status}</td>
       <td>${dataHora}</td>
     `;
@@ -160,7 +188,12 @@ historicoRef.on("value", snapshot => {
     tbody.appendChild(tr);
     contador++;
   });
-});
+
+  if (contador === 1) {
+    tbody.innerHTML =
+      "<tr><td colspan='6'>Nenhum alerta encontrado</td></tr>";
+  }
+}
 </script>
 
 </body>
