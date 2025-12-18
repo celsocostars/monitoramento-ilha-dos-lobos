@@ -1,100 +1,151 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SIGRE – Ilha dos Lobos</title>
+  <meta charset="UTF-8">
+  <title>SIG-REVIS – UERGS</title>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 10px;
-  background: #f4f6f8;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+    }
 
-h1 {
-  text-align: center;
-}
+    header {
+      background: #1b7f5a;
+      color: white;
+      padding: 14px 10px;
+      text-align: center;
+    }
 
-.filtros {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  margin-bottom: 15px;
-}
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+    }
 
-.filtros input, .filtros button {
-  padding: 6px;
-  font-size: 14px;
-}
+    header h2 {
+      margin: 6px 0 0 0;
+      font-size: 13px;
+      font-weight: normal;
+      opacity: 0.95;
+    }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-}
+    .filtros {
+      background: white;
+      padding: 8px;
+      font-size: 13px;
+    }
 
-th, td {
-  padding: 8px;
-  border: 1px solid #ccc;
-  text-align: center;
-}
+    .filtros label {
+      display: block;
+      margin-bottom: 6px;
+    }
 
-th {
-  background: #2c7be5;
-  color: white;
-}
+    .filtros input {
+      width: 100%;
+      padding: 5px;
+      font-size: 13px;
+      margin-top: 2px;
+    }
 
-tr.alerta {
-  background: #ffd6d6;
-}
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      margin-top: 5px;
+      font-size: 14px;
+    }
 
-@media (max-width: 600px) {
-  table {
-    font-size: 12px;
-  }
-}
-</style>
+    th, td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background: #e3f3ee;
+      font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    .dentro {
+      color: #c62828;
+      font-weight: bold;
+    }
+
+    .fora {
+      color: #1b7f5a;
+      font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      table {
+        font-size: 13px;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<h1>SIGRE – Monitoramento Ilha dos Lobos</h1>
+<header>
+  <h1>SIG-REVIS</h1>
+  <h2>
+    Geofencing para Controle de Aproximação de Embarcações<br>
+    às Áreas Marinhas Protegidas
+  </h2>
+</header>
 
 <div class="filtros">
-  <input type="date" id="filtroDia">
-  <input type="time" id="filtroInicio">
-  <input type="time" id="filtroFim">
   <label>
-    <input type="checkbox" id="filtroAlerta"> Somente alertas
+    <input type="checkbox" id="filtroAlerta">
+    Mostrar somente ALERTAS (DENTRO)
   </label>
-  <button onclick="limparFiltros()">Limpar</button>
-  <button onclick="exportarCSV()">CSV</button>
+
+  <label>
+    Filtrar por dia:
+    <input type="date" id="filtroDia">
+  </label>
+
+  <label>
+    Período inicial:
+    <input type="datetime-local" id="filtroInicio">
+  </label>
+
+  <label>
+    Período final:
+    <input type="datetime-local" id="filtroFim">
+  </label>
 </div>
 
 <table>
-<thead>
-<tr>
-  <th>#</th>
-  <th>Latitude</th>
-  <th>Longitude</th>
-  <th>Distância (m)</th>
-  <th>Status</th>
-  <th>Data/Hora</th>
-</tr>
-</thead>
-<tbody id="tabela-dados">
-<tr><td colspan="6">Aguardando dados...</td></tr>
-</tbody>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Latitude</th>
+      <th>Longitude</th>
+      <th>Distância (m)</th>
+      <th>Status</th>
+      <th>Data / Hora</th>
+    </tr>
+  </thead>
+  <tbody id="tabela-dados">
+    <tr>
+      <td colspan="6">Carregando dados...</td>
+    </tr>
+  </tbody>
 </table>
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
-/* 🔹 Firebase config */
 const firebaseConfig = {
   apiKey: "AIzaSyBr6MR_uXt8GTuc73w6tSxr5jW6kQwLntY",
   authDomain: "ilhalobos-3ab8f.firebaseapp.com",
@@ -104,97 +155,106 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+
 const database = firebase.database();
 
-/* 🔹 Referência */
-const ref = database
+/* Últimas 10 leituras */
+const historicoRef = database
   .ref("embarcacoes/esp32_01/historico")
-  .limitToLast(30);
+  .limitToLast(10);
 
-let dados = [];
+let dadosCache = [];
 
-ref.on("value", snap => {
-  dados = [];
-  snap.forEach(c => dados.push(c.val()));
-  dados.reverse();
+historicoRef.on("value", snapshot => {
+
+  dadosCache = [];
+
+  snapshot.forEach(child => {
+    dadosCache.push(child.val());
+  });
+
+  dadosCache.reverse();
   atualizarTabela();
 });
+
+/* Reagir a qualquer filtro */
+document.querySelectorAll("input")
+  .forEach(el => el.addEventListener("change", atualizarTabela));
+
+function converterParaTimestamp(dataHora) {
+  // Formato esperado: DD/MM/YYYY HH:MM:SS
+  const [data, hora] = dataHora.split(" ");
+  const [d, m, a] = data.split("/");
+  return new Date(`${a}-${m}-${d}T${hora}`).getTime();
+}
 
 function atualizarTabela() {
 
   const tbody = document.getElementById("tabela-dados");
   tbody.innerHTML = "";
 
-  const alerta = document.getElementById("filtroAlerta").checked;
-  const dia = document.getElementById("filtroDia").value;
-  const ini = document.getElementById("filtroInicio").value;
-  const fim = document.getElementById("filtroFim").value;
+  const somenteAlerta =
+    document.getElementById("filtroAlerta").checked;
 
-  let filtrados = dados.filter(d => {
+  const diaSelecionado =
+    document.getElementById("filtroDia").value;
 
-    if (alerta && d.status !== "DENTRO") return false;
+  const inicio =
+    document.getElementById("filtroInicio").value
+      ? new Date(document.getElementById("filtroInicio").value).getTime()
+      : null;
 
-    if (dia && !d.dataHora.startsWith(
-      dia.split("-").reverse().join("/")
-    )) return false;
+  const fim =
+    document.getElementById("filtroFim").value
+      ? new Date(document.getElementById("filtroFim").value).getTime()
+      : null;
 
-    if (ini || fim) {
-      const h = d.dataHora.split(" ")[1];
-      if (ini && h < ini) return false;
-      if (fim && h > fim) return false;
+  let contador = 1;
+
+  dadosCache.forEach(linha => {
+
+    const partes = linha.split("|");
+
+    const dataHora = partes[0]?.trim();
+    const lat = partes[1]?.trim();
+    const lon = partes[2]?.trim();
+    const distancia = partes[3]?.trim();
+    const status = partes[4]?.trim();
+
+    const timestamp = converterParaTimestamp(dataHora);
+
+    if (somenteAlerta && status !== "DENTRO") return;
+
+    if (diaSelecionado) {
+      const dataLinha = dataHora.split(" ")[0];
+      const [d, m, a] = dataLinha.split("/");
+      if (`${a}-${m}-${d}` !== diaSelecionado) return;
     }
 
-    return true;
-  });
+    if (inicio && timestamp < inicio) return;
+    if (fim && timestamp > fim) return;
 
-  filtrados = filtrados.slice(0, 10);
+    const classeStatus =
+      status === "DENTRO" ? "dentro" : "fora";
 
-  let i = 1;
-
-  filtrados.forEach(d => {
     const tr = document.createElement("tr");
-    if (d.status === "DENTRO") tr.classList.add("alerta");
-
     tr.innerHTML = `
-      <td>${i++}</td>
-      <td>${d.lat}</td>
-      <td>${d.lon}</td>
-      <td>${d.distancia}</td>
-      <td>${d.status}</td>
-      <td>${d.dataHora}</td>
+      <td>${contador}</td>
+      <td>${lat}</td>
+      <td>${lon}</td>
+      <td>${distancia}</td>
+      <td class="${classeStatus}">${status}</td>
+      <td>${dataHora}</td>
     `;
+
     tbody.appendChild(tr);
+    contador++;
   });
 
-  if (filtrados.length === 0) {
+  if (contador === 1) {
     tbody.innerHTML =
       "<tr><td colspan='6'>Nenhum dado encontrado</td></tr>";
   }
-}
-
-function limparFiltros() {
-  document.querySelectorAll(".filtros input").forEach(i => {
-    if (i.type === "checkbox") i.checked = false;
-    else i.value = "";
-  });
-  atualizarTabela();
-}
-
-function exportarCSV() {
-
-  if (dados.length === 0) return alert("Sem dados");
-
-  let csv = "Lat;Lon;Distancia;Status;DataHora\n";
-
-  dados.slice(0, 10).forEach(d => {
-    csv += `${d.lat};${d.lon};${d.distancia};${d.status};${d.dataHora}\n`;
-  });
-
-  const blob = new Blob([csv], {type:"text/csv"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "sigre.csv";
-  a.click();
 }
 </script>
 
