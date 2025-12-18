@@ -14,30 +14,26 @@
     }
 
     header {
-      background: #006633; /* Verde institucional UERGS */
+      background: #1b7f5a; /* Verde mais claro */
       color: white;
-      padding: 12px 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    header img {
-      height: 42px;
-    }
-
-    .titulo {
-      flex: 1;
+      padding: 10px;
       text-align: center;
     }
 
-    .titulo h1 {
-      margin: 0;
+    header img {
+      max-width: 160px;
+      width: 60%;
+      height: auto;
+      margin-bottom: 6px;
+    }
+
+    header h1 {
+      margin: 4px 0 0 0;
       font-size: 18px;
       line-height: 1.2;
     }
 
-    .titulo h2 {
+    header h2 {
       margin: 4px 0 0 0;
       font-size: 13px;
       font-weight: normal;
@@ -66,7 +62,7 @@
     }
 
     th {
-      background: #e6f2ec; /* verde claro institucional */
+      background: #e3f3ee;
       font-weight: bold;
     }
 
@@ -80,24 +76,21 @@
     }
 
     .fora {
-      color: #006633;
+      color: #1b7f5a;
       font-weight: bold;
     }
 
     @media (max-width: 600px) {
-      header {
-        flex-direction: column;
-      }
-
       header img {
-        height: 36px;
+        max-width: 140px;
+        width: 70%;
       }
 
-      .titulo h1 {
+      header h1 {
         font-size: 16px;
       }
 
-      .titulo h2 {
+      header h2 {
         font-size: 12px;
       }
 
@@ -114,13 +107,11 @@
   <!-- LOGOTIPO -->
   <img src="logo-uergs.png" alt="UERGS">
 
-  <div class="titulo">
-    <h1>SIG-REVIS</h1>
-    <h2>
-      Geofencing para Controle de Aproximação de Embarcações<br>
-      às Áreas Marinhas Protegidas
-    </h2>
-  </div>
+  <h1>SIG-REVIS</h1>
+  <h2>
+    Geofencing para Controle de Aproximação de Embarcações<br>
+    às Áreas Marinhas Protegidas
+  </h2>
 </header>
 
 <div class="filtro">
@@ -165,7 +156,6 @@ firebase.initializeApp(firebaseConfig);
 
 const database = firebase.database();
 
-/* Últimas 10 leituras */
 const historicoRef = database
   .ref("embarcacoes/esp32_01/historico")
   .limitToLast(10);
