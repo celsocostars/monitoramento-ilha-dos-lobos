@@ -2,15 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Monitoramento – Ilha dos Lobos</title>
+  <title>Monitoramento – Tabela</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
 
   <style>
     body {
@@ -26,33 +20,32 @@
       text-align: center;
     }
 
-    #info {
-      padding: 10px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
       background: white;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      margin-top: 10px;
       font-size: 14px;
     }
 
-    #map {
-      height: 70vh;
-      width: 100%;
+    th, td {
+      padding: 10px 6px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
     }
 
-    .status-dentro {
-      color: red;
+    th {
+      background: #eeeeee;
       font-weight: bold;
     }
 
-    .status-fora {
-      color: green;
-      font-weight: bold;
+    tr:nth-child(even) {
+      background: #fafafa;
     }
 
     @media (max-width: 600px) {
-      #info {
-        grid-template-columns: 1fr;
+      table {
+        font-size: 13px;
       }
     }
   </style>
@@ -61,25 +54,27 @@
 <body>
 
 <header>
-  <h2>Sistema de Monitoramento – Ilha dos Lobos</h2>
+  <h2>Monitoramento – Dados GPS</h2>
 </header>
 
-<div id="info">
-  <div><strong>Latitude:</strong> <span id="lat">--</span></div>
-  <div><strong>Longitude:</strong> <span id="lon">--</span></div>
-  <div><strong>Distância da borda:</strong> <span id="dist">--</span> m</div>
-  <div><strong>Status:</strong> <span id="status">--</span></div>
-  <div><strong>Data/Hora:</strong> <span id="datahora">--</span></div>
-</div>
+<table>
+  <thead>
+    <tr>
+      <th>Latitude</th>
+      <th>Longitude</th>
+      <th>Data / Hora</th>
+    </tr>
+  </thead>
+  <tbody id="tabela-dados">
+    <tr>
+      <td colspan="3">Aguardando dados...</td>
+    </tr>
+  </tbody>
+</table>
 
-<div id="map"></div>
-
-<!-- Firebase (compat para simplicidade) -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<!-- Leaflet -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 /* =========================================================
@@ -97,65 +92,30 @@ firebase.initializeApp(firebaseConfig);
 
 const database = firebase.database();
 
-/* 🔴 ESTE CAMINHO TEM QUE BATER COM O ESP32 */
+/* 🔴 Caminho EXATO onde o ESP32 grava */
 const refDados = database.ref("embarcacoes/esp32_01");
 
 /* =========================================================
-   MAPA
-   ========================================================= */
-const ilhaLat = -29.3389;
-const ilhaLon = -49.7153;
-
-const map = L.map("map").setView([ilhaLat, ilhaLon], 13);
-
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "© OpenStreetMap"
-}).addTo(map);
-
-/* Marcador da embarcação */
-const marker = L.marker([ilhaLat, ilhaLon]).addTo(map);
-
-/* Círculo de proteção da ilha */
-L.circle([ilhaLat, ilhaLon], {
-  radius: 1000,
-  color: "blue",
-  fillOpacity: 0.1
-}).addTo(map);
-
-/* =========================================================
-   ATUALIZAÇÃO EM TEMPO REAL
+   ATUALIZAÇÃO EM TEMPO REAL (ÚLTIMO REGISTRO)
    ========================================================= */
 refDados.on("value", snapshot => {
 
   const data = snapshot.val();
   if (!data) return;
 
-  document.getElementById("lat").innerText =
-    Number(data.lat).toFixed(6);
+  const tbody = document.getElementById("tabela-dados");
+  tbody.innerHTML = "";
 
-  document.getElementById("lon").innerText =
-    Number(data.lon).toFixed(6);
+  const row = document.createElement("tr");
 
-  document.getElementById("dist").innerText =
-    Number(data.distancia_borda).toFixed(1);
+  row.innerHTML = `
+    <td>${Number(data.lat).toFixed(6)}</td>
+    <td>${Number(data.lon).toFixed(6)}</td>
+    <td>${data.data_hora || "--"}</td>
+  `;
 
-  document.getElementById("datahora").innerText =
-    data.data_hora || "--";
+  tbody.appendChild(row);
 
-  const statusEl = document.getElementById("status");
-  statusEl.innerText = data.status;
-
-  if (data.status === "DENTRO") {
-    statusEl.className = "status-dentro";
-  } else {
-    statusEl.className = "status-fora";
-  }
-
-  /* Atualiza posição no mapa */
-  marker.setLatLng([data.lat, data.lon]);
-  map.setView([data.lat, data.lon], 15);
-
-  console.log("Dados atualizados:", data);
 });
 </script>
 
