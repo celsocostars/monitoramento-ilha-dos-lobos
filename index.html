@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Monitoramento – Tabela</title>
+  <title>Monitoramento – Últimas 20 Leituras</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -29,7 +29,7 @@
     }
 
     th, td {
-      padding: 10px 6px;
+      padding: 8px 6px;
       border-bottom: 1px solid #ddd;
       text-align: center;
     }
@@ -54,7 +54,7 @@
 <body>
 
 <header>
-  <h2>Monitoramento – Dados GPS</h2>
+  <h2>Últimas 20 Leituras – GPS</h2>
 </header>
 
 <table>
@@ -67,7 +67,7 @@
   </thead>
   <tbody id="tabela-dados">
     <tr>
-      <td colspan="3">Aguardando dados...</td>
+      <td colspan="3">Carregando dados...</td>
     </tr>
   </tbody>
 </table>
@@ -92,30 +92,52 @@ firebase.initializeApp(firebaseConfig);
 
 const database = firebase.database();
 
-/* 🔴 Caminho EXATO onde o ESP32 grava */
-const refDados = database.ref("embarcacoes/esp32_01");
+/* 🔴 Histórico (pushString) */
+const historicoRef = database
+  .ref("embarcacoes/esp32_01/historico")
+  .limitToLast(20);
 
 /* =========================================================
-   ATUALIZAÇÃO EM TEMPO REAL (ÚLTIMO REGISTRO)
+   ATUALIZAÇÃO EM TEMPO REAL
    ========================================================= */
-refDados.on("value", snapshot => {
-
-  const data = snapshot.val();
-  if (!data) return;
+historicoRef.on("value", snapshot => {
 
   const tbody = document.getElementById("tabela-dados");
   tbody.innerHTML = "";
 
-  const row = document.createElement("tr");
+  if (!snapshot.exists()) {
+    tbody.innerHTML =
+      "<tr><td colspan='3'>Sem dados</td></tr>";
+    return;
+  }
 
-  row.innerHTML = `
-    <td>${Number(data.lat).toFixed(6)}</td>
-    <td>${Number(data.lon).toFixed(6)}</td>
-    <td>${data.data_hora || "--"}</td>
-  `;
+  const dados = [];
+  snapshot.forEach(child => {
+    dados.push(child.val());
+  });
 
-  tbody.appendChild(row);
+  /* Mais recente primeiro */
+  dados.reverse();
 
+  dados.forEach(linha => {
+
+    // Formato esperado:
+    // DATA | LAT | LON | DIST | STATUS
+    const partes = linha.split("|");
+
+    const dataHora = partes[0]?.trim() || "--";
+    const lat = partes[1]?.trim() || "--";
+    const lon = partes[2]?.trim() || "--";
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${lat}</td>
+      <td>${lon}</td>
+      <td>${dataHora}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
 });
 </script>
 
