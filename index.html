@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>SIG-REVIS – Monitoramento</title>
+  <title>SIG-REVIS – UERGS</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -14,20 +14,31 @@
     }
 
     header {
-      background: #1e88e5;
+      background: #006633; /* Verde institucional UERGS */
       color: white;
-      padding: 14px 10px;
+      padding: 12px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header img {
+      height: 42px;
+    }
+
+    .titulo {
+      flex: 1;
       text-align: center;
     }
 
-    header h1 {
+    .titulo h1 {
       margin: 0;
       font-size: 18px;
-      line-height: 1.3;
+      line-height: 1.2;
     }
 
-    header h2 {
-      margin: 6px 0 0 0;
+    .titulo h2 {
+      margin: 4px 0 0 0;
       font-size: 13px;
       font-weight: normal;
       opacity: 0.95;
@@ -55,7 +66,7 @@
     }
 
     th {
-      background: #eeeeee;
+      background: #e6f2ec; /* verde claro institucional */
       font-weight: bold;
     }
 
@@ -64,26 +75,34 @@
     }
 
     .dentro {
-      color: red;
+      color: #c62828;
       font-weight: bold;
     }
 
     .fora {
-      color: green;
+      color: #006633;
       font-weight: bold;
     }
 
     @media (max-width: 600px) {
-      table {
-        font-size: 13px;
+      header {
+        flex-direction: column;
       }
 
-      header h1 {
+      header img {
+        height: 36px;
+      }
+
+      .titulo h1 {
         font-size: 16px;
       }
 
-      header h2 {
+      .titulo h2 {
         font-size: 12px;
+      }
+
+      table {
+        font-size: 13px;
       }
     }
   </style>
@@ -92,11 +111,16 @@
 <body>
 
 <header>
-  <h1>SIG-REVIS</h1>
-  <h2>
-    Geofencing para Controle de Aproximação de Embarcações<br>
-    às Áreas Marinhas Protegidas
-  </h2>
+  <!-- LOGOTIPO -->
+  <img src="logo-uergs.png" alt="UERGS">
+
+  <div class="titulo">
+    <h1>SIG-REVIS</h1>
+    <h2>
+      Geofencing para Controle de Aproximação de Embarcações<br>
+      às Áreas Marinhas Protegidas
+    </h2>
+  </div>
 </header>
 
 <div class="filtro">
@@ -129,9 +153,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-/* =========================================================
-   CONFIGURAÇÃO FIREBASE
-   ========================================================= */
 const firebaseConfig = {
   apiKey: "AIzaSyBr6MR_uXt8GTuc73w6tSxr5jW6kQwLntY",
   authDomain: "ilhalobos-3ab8f.firebaseapp.com",
@@ -144,16 +165,13 @@ firebase.initializeApp(firebaseConfig);
 
 const database = firebase.database();
 
-/* 🔴 Histórico das leituras */
+/* Últimas 10 leituras */
 const historicoRef = database
   .ref("embarcacoes/esp32_01/historico")
-  .limitToLast(20);
+  .limitToLast(10);
 
 let dadosCache = [];
 
-/* =========================================================
-   ATUALIZAÇÃO EM TEMPO REAL
-   ========================================================= */
 historicoRef.on("value", snapshot => {
 
   dadosCache = [];
@@ -162,13 +180,10 @@ historicoRef.on("value", snapshot => {
     dadosCache.push(child.val());
   });
 
-  dadosCache.reverse(); // mais recente primeiro
+  dadosCache.reverse();
   atualizarTabela();
 });
 
-/* =========================================================
-   FILTRO DE ALERTA
-   ========================================================= */
 document.getElementById("filtroAlerta")
   .addEventListener("change", atualizarTabela);
 
@@ -184,8 +199,6 @@ function atualizarTabela() {
 
   dadosCache.forEach(linha => {
 
-    // Formato:
-    // DATA | LAT | LON | DIST | STATUS
     const partes = linha.split("|");
 
     const dataHora = partes[0]?.trim() || "--";
