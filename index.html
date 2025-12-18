@@ -14,7 +14,7 @@
     }
 
     header {
-      background: #1b7f5a; /* Verde institucional claro */
+      background: #1b7f5a;
       color: white;
       padding: 14px 10px;
       text-align: center;
@@ -23,7 +23,6 @@
     header h1 {
       margin: 0;
       font-size: 18px;
-      line-height: 1.2;
     }
 
     header h2 {
@@ -33,11 +32,22 @@
       opacity: 0.95;
     }
 
-    .filtro {
-      padding: 8px;
+    .filtros {
       background: white;
-      text-align: center;
-      font-size: 14px;
+      padding: 8px;
+      font-size: 13px;
+    }
+
+    .filtros label {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .filtros input {
+      width: 100%;
+      padding: 5px;
+      font-size: 13px;
+      margin-top: 2px;
     }
 
     table {
@@ -74,14 +84,6 @@
     }
 
     @media (max-width: 600px) {
-      header h1 {
-        font-size: 16px;
-      }
-
-      header h2 {
-        font-size: 12px;
-      }
-
       table {
         font-size: 13px;
       }
@@ -99,10 +101,25 @@
   </h2>
 </header>
 
-<div class="filtro">
+<div class="filtros">
   <label>
     <input type="checkbox" id="filtroAlerta">
     Mostrar somente ALERTAS (DENTRO)
+  </label>
+
+  <label>
+    Filtrar por dia:
+    <input type="date" id="filtroDia">
+  </label>
+
+  <label>
+    Período inicial:
+    <input type="datetime-local" id="filtroInicio">
+  </label>
+
+  <label>
+    Período final:
+    <input type="datetime-local" id="filtroFim">
   </label>
 </div>
 
@@ -160,8 +177,16 @@ historicoRef.on("value", snapshot => {
   atualizarTabela();
 });
 
-document.getElementById("filtroAlerta")
-  .addEventListener("change", atualizarTabela);
+/* Reagir a qualquer filtro */
+document.querySelectorAll("input")
+  .forEach(el => el.addEventListener("change", atualizarTabela));
+
+function converterParaTimestamp(dataHora) {
+  // Formato esperado: DD/MM/YYYY HH:MM:SS
+  const [data, hora] = dataHora.split(" ");
+  const [d, m, a] = data.split("/");
+  return new Date(`${a}-${m}-${d}T${hora}`).getTime();
+}
 
 function atualizarTabela() {
 
@@ -171,20 +196,43 @@ function atualizarTabela() {
   const somenteAlerta =
     document.getElementById("filtroAlerta").checked;
 
+  const diaSelecionado =
+    document.getElementById("filtroDia").value;
+
+  const inicio =
+    document.getElementById("filtroInicio").value
+      ? new Date(document.getElementById("filtroInicio").value).getTime()
+      : null;
+
+  const fim =
+    document.getElementById("filtroFim").value
+      ? new Date(document.getElementById("filtroFim").value).getTime()
+      : null;
+
   let contador = 1;
 
   dadosCache.forEach(linha => {
 
     const partes = linha.split("|");
 
-    const dataHora = partes[0]?.trim() || "--";
-    const lat = partes[1]?.trim() || "--";
-    const lon = partes[2]?.trim() || "--";
-    const distancia = partes[3]?.trim() || "--";
-    const status = partes[4]?.trim() || "--";
+    const dataHora = partes[0]?.trim();
+    const lat = partes[1]?.trim();
+    const lon = partes[2]?.trim();
+    const distancia = partes[3]?.trim();
+    const status = partes[4]?.trim();
 
-    if (somenteAlerta && status !== "DENTRO")
-      return;
+    const timestamp = converterParaTimestamp(dataHora);
+
+    if (somenteAlerta && status !== "DENTRO") return;
+
+    if (diaSelecionado) {
+      const dataLinha = dataHora.split(" ")[0];
+      const [d, m, a] = dataLinha.split("/");
+      if (`${a}-${m}-${d}` !== diaSelecionado) return;
+    }
+
+    if (inicio && timestamp < inicio) return;
+    if (fim && timestamp > fim) return;
 
     const classeStatus =
       status === "DENTRO" ? "dentro" : "fora";
@@ -205,7 +253,7 @@ function atualizarTabela() {
 
   if (contador === 1) {
     tbody.innerHTML =
-      "<tr><td colspan='6'>Nenhum alerta encontrado</td></tr>";
+      "<tr><td colspan='6'>Nenhum dado encontrado</td></tr>";
   }
 }
 </script>
