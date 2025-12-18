@@ -1,4 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGRE – Ilha dos Lobos</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 10px;
+  background: #f4f6f8;
+}
+
+h1 {
+  text-align: center;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.filtros input, .filtros button {
+  padding: 6px;
+  font-size: 14px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th, td {
+  padding: 8px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+th {
+  background: #2c7be5;
+  color: white;
+}
+
+tr.alerta {
+  background: #ffd6d6;
+}
+
+@media (max-width: 600px) {
+  table {
+    font-size: 12px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>SIGRE – Monitoramento Ilha dos Lobos</h1>
+
+<div class="filtros">
+  <input type="date" id="filtroDia">
+  <input type="time" id="filtroInicio">
+  <input type="time" id="filtroFim">
+  <label>
+    <input type="checkbox" id="filtroAlerta"> Somente alertas
+  </label>
+  <button onclick="limparFiltros()">Limpar</button>
+  <button onclick="exportarCSV()">CSV</button>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>#</th>
+  <th>Latitude</th>
+  <th>Longitude</th>
+  <th>Distância (m)</th>
+  <th>Status</th>
+  <th>Data/Hora</th>
+</tr>
+</thead>
+<tbody id="tabela-dados">
+<tr><td colspan="6">Aguardando dados...</td></tr>
+</tbody>
+</table>
+
 <script>
+/* 🔹 Firebase config */
 const firebaseConfig = {
   apiKey: "AIzaSyBr6MR_uXt8GTuc73w6tSxr5jW6kQwLntY",
   authDomain: "ilhalobos-3ab8f.firebaseapp.com",
@@ -10,72 +106,52 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-/* 🔹 Sempre buscar um pouco mais para garantir filtros */
-const historicoRef = database
+/* 🔹 Referência */
+const ref = database
   .ref("embarcacoes/esp32_01/historico")
   .limitToLast(30);
 
-let dadosCache = [];
-let dadosFiltrados = [];
+let dados = [];
 
-historicoRef.on("value", snapshot => {
-  dadosCache = [];
-  snapshot.forEach(child => dadosCache.push(child.val()));
-  dadosCache.reverse(); // mais recente primeiro
+ref.on("value", snap => {
+  dados = [];
+  snap.forEach(c => dados.push(c.val()));
+  dados.reverse();
   atualizarTabela();
 });
-
-document.querySelectorAll(".filtros input")
-  .forEach(el => el.addEventListener("change", atualizarTabela));
-
-function converterTimestamp(dataHora) {
-  const [data, hora] = dataHora.split(" ");
-  const [d, m, a] = data.split("/");
-  return new Date(`${a}-${m}-${d}T${hora}`).getTime();
-}
 
 function atualizarTabela() {
 
   const tbody = document.getElementById("tabela-dados");
   tbody.innerHTML = "";
-  dadosFiltrados = [];
 
-  const alerta = filtroAlerta.checked;
-  const dia = filtroDia.value;
-  const ini = filtroInicio.value ? new Date(filtroInicio.value).getTime() : null;
-  const fim = filtroFim.value ? new Date(filtroFim.value).getTime() : null;
+  const alerta = document.getElementById("filtroAlerta").checked;
+  const dia = document.getElementById("filtroDia").value;
+  const ini = document.getElementById("filtroInicio").value;
+  const fim = document.getElementById("filtroFim").value;
 
-  dadosCache.forEach(linha => {
+  let filtrados = dados.filter(d => {
 
-    const p = linha.split("|");
-    const dataHora = p[0].trim();
-    const lat = p[1].trim();
-    const lon = p[2].trim();
-    const dist = p[3].trim();
-    const status = p[4].trim();
+    if (alerta && d.status !== "DENTRO") return false;
 
-    const ts = converterTimestamp(dataHora);
+    if (dia && !d.dataHora.startsWith(
+      dia.split("-").reverse().join("/")
+    )) return false;
 
-    if (alerta && status !== "DENTRO") return;
-
-    if (dia) {
-      const [d, m, a] = dataHora.split(" ")[0].split("/");
-      if (`${a}-${m}-${d}` !== dia) return;
+    if (ini || fim) {
+      const h = d.dataHora.split(" ")[1];
+      if (ini && h < ini) return false;
+      if (fim && h > fim) return false;
     }
 
-    if (ini && ts < ini) return;
-    if (fim && ts > fim) return;
-
-    dadosFiltrados.push({lat, lon, dist, status, dataHora});
+    return true;
   });
 
-  /* 🔹 GARANTIA: mostrar SOMENTE as 10 mais recentes */
-  dadosFiltrados = dadosFiltrados.slice(0, 10);
+  filtrados = filtrados.slice(0, 10);
 
   let i = 1;
 
-  dadosFiltrados.forEach(d => {
-
+  filtrados.forEach(d => {
     const tr = document.createElement("tr");
     if (d.status === "DENTRO") tr.classList.add("alerta");
 
@@ -83,44 +159,44 @@ function atualizarTabela() {
       <td>${i++}</td>
       <td>${d.lat}</td>
       <td>${d.lon}</td>
-      <td>${d.dist}</td>
-      <td class="${d.status === "DENTRO" ? "dentro" : "fora"}">${d.status}</td>
+      <td>${d.distancia}</td>
+      <td>${d.status}</td>
       <td>${d.dataHora}</td>
     `;
-
     tbody.appendChild(tr);
   });
 
-  if (dadosFiltrados.length === 0) {
+  if (filtrados.length === 0) {
     tbody.innerHTML =
       "<tr><td colspan='6'>Nenhum dado encontrado</td></tr>";
   }
 }
 
 function limparFiltros() {
-  document.querySelectorAll(".filtros input").forEach(i => i.value = "");
-  filtroAlerta.checked = false;
+  document.querySelectorAll(".filtros input").forEach(i => {
+    if (i.type === "checkbox") i.checked = false;
+    else i.value = "";
+  });
   atualizarTabela();
 }
 
 function exportarCSV() {
 
-  if (dadosFiltrados.length === 0) {
-    alert("Nenhum dado para exportar");
-    return;
-  }
+  if (dados.length === 0) return alert("Sem dados");
 
-  let csv = "Latitude;Longitude;Distancia(m);Status;DataHora\n";
+  let csv = "Lat;Lon;Distancia;Status;DataHora\n";
 
-  dadosFiltrados.forEach(d => {
-    csv += `${d.lat};${d.lon};${d.dist};${d.status};${d.dataHora}\n`;
+  dados.slice(0, 10).forEach(d => {
+    csv += `${d.lat};${d.lon};${d.distancia};${d.status};${d.dataHora}\n`;
   });
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-
-  link.href = URL.createObjectURL(blob);
-  link.download = "sig-revis.csv";
-  link.click();
+  const blob = new Blob([csv], {type:"text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "sigre.csv";
+  a.click();
 }
 </script>
+
+</body>
+</html>
