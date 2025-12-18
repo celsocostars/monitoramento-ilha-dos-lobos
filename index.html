@@ -14,27 +14,20 @@
     }
 
     header {
-      background: #1b7f5a; /* Verde mais claro */
+      background: #1b7f5a; /* Verde institucional claro */
       color: white;
-      padding: 10px;
+      padding: 14px 10px;
       text-align: center;
     }
 
-    header img {
-      max-width: 160px;
-      width: 60%;
-      height: auto;
-      margin-bottom: 6px;
-    }
-
     header h1 {
-      margin: 4px 0 0 0;
+      margin: 0;
       font-size: 18px;
       line-height: 1.2;
     }
 
     header h2 {
-      margin: 4px 0 0 0;
+      margin: 6px 0 0 0;
       font-size: 13px;
       font-weight: normal;
       opacity: 0.95;
@@ -81,11 +74,6 @@
     }
 
     @media (max-width: 600px) {
-      header img {
-        max-width: 140px;
-        width: 70%;
-      }
-
       header h1 {
         font-size: 16px;
       }
@@ -104,9 +92,6 @@
 <body>
 
 <header>
-  <!-- LOGOTIPO -->
-  <img src="logo-uergs.png" alt="UERGS">
-
   <h1>SIG-REVIS</h1>
   <h2>
     Geofencing para Controle de Aproximação de Embarcações<br>
@@ -156,6 +141,7 @@ firebase.initializeApp(firebaseConfig);
 
 const database = firebase.database();
 
+/* Últimas 10 leituras */
 const historicoRef = database
   .ref("embarcacoes/esp32_01/historico")
   .limitToLast(10);
