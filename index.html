@@ -1,182 +1,3 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>SIG-REVIS – UERGS</title>
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-    }
-
-    header {
-      background: #1b7f5a;
-      color: white;
-      padding: 14px 10px;
-      text-align: center;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    header h2 {
-      margin: 6px 0 0 0;
-      font-size: 13px;
-      font-weight: normal;
-      opacity: 0.95;
-    }
-
-    /* ================= FILTROS ================= */
-    .filtros {
-      background: white;
-      padding: 8px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      font-size: 13px;
-    }
-
-    .filtros label {
-      display: flex;
-      flex-direction: column;
-      font-size: 12px;
-    }
-
-    .filtros input {
-      padding: 4px;
-      font-size: 13px;
-    }
-
-    .filtros button {
-      padding: 6px 10px;
-      font-size: 13px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .btn-limpar {
-      background: #9e9e9e;
-      color: white;
-    }
-
-    .btn-exportar {
-      background: #1b7f5a;
-      color: white;
-    }
-
-    /* ================= TABELA ================= */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      margin-top: 5px;
-      font-size: 14px;
-    }
-
-    th, td {
-      padding: 8px 6px;
-      border-bottom: 1px solid #ddd;
-      text-align: center;
-    }
-
-    th {
-      background: #e3f3ee;
-      font-weight: bold;
-    }
-
-    tr:nth-child(even) {
-      background: #fafafa;
-    }
-
-    /* ALERTA */
-    tr.alerta {
-      background: #ffebee !important;
-      border-left: 5px solid #c62828;
-    }
-
-    .dentro {
-      color: #c62828;
-      font-weight: bold;
-    }
-
-    .fora {
-      color: #1b7f5a;
-      font-weight: bold;
-    }
-
-    @media (max-width: 600px) {
-      table {
-        font-size: 13px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-
-<header>
-  <h1>SIG-REVIS</h1>
-  <h2>
-    Geofencing para Controle de Aproximação de Embarcações<br>
-    às Áreas Marinhas Protegidas
-  </h2>
-</header>
-
-<div class="filtros">
-  <label>
-    ALERTAS
-    <input type="checkbox" id="filtroAlerta">
-  </label>
-
-  <label>
-    Dia
-    <input type="date" id="filtroDia">
-  </label>
-
-  <label>
-    Início
-    <input type="datetime-local" id="filtroInicio">
-  </label>
-
-  <label>
-    Fim
-    <input type="datetime-local" id="filtroFim">
-  </label>
-
-  <button class="btn-limpar" onclick="limparFiltros()">Limpar filtros</button>
-  <button class="btn-exportar" onclick="exportarCSV()">Exportar CSV</button>
-</div>
-
-<table>
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Latitude</th>
-      <th>Longitude</th>
-      <th>Distância (m)</th>
-      <th>Status</th>
-      <th>Data / Hora</th>
-    </tr>
-  </thead>
-  <tbody id="tabela-dados">
-    <tr>
-      <td colspan="6">Carregando dados...</td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBr6MR_uXt8GTuc73w6tSxr5jW6kQwLntY",
@@ -189,10 +10,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-/* Últimas 10 leituras */
+/* 🔹 Sempre buscar um pouco mais para garantir filtros */
 const historicoRef = database
   .ref("embarcacoes/esp32_01/historico")
-  .limitToLast(10);
+  .limitToLast(30);
 
 let dadosCache = [];
 let dadosFiltrados = [];
@@ -200,7 +21,7 @@ let dadosFiltrados = [];
 historicoRef.on("value", snapshot => {
   dadosCache = [];
   snapshot.forEach(child => dadosCache.push(child.val()));
-  dadosCache.reverse();
+  dadosCache.reverse(); // mais recente primeiro
   atualizarTabela();
 });
 
@@ -224,8 +45,6 @@ function atualizarTabela() {
   const ini = filtroInicio.value ? new Date(filtroInicio.value).getTime() : null;
   const fim = filtroFim.value ? new Date(filtroFim.value).getTime() : null;
 
-  let i = 1;
-
   dadosCache.forEach(linha => {
 
     const p = linha.split("|");
@@ -248,23 +67,31 @@ function atualizarTabela() {
     if (fim && ts > fim) return;
 
     dadosFiltrados.push({lat, lon, dist, status, dataHora});
+  });
+
+  /* 🔹 GARANTIA: mostrar SOMENTE as 10 mais recentes */
+  dadosFiltrados = dadosFiltrados.slice(0, 10);
+
+  let i = 1;
+
+  dadosFiltrados.forEach(d => {
 
     const tr = document.createElement("tr");
-    if (status === "DENTRO") tr.classList.add("alerta");
+    if (d.status === "DENTRO") tr.classList.add("alerta");
 
     tr.innerHTML = `
       <td>${i++}</td>
-      <td>${lat}</td>
-      <td>${lon}</td>
-      <td>${dist}</td>
-      <td class="${status === "DENTRO" ? "dentro" : "fora"}">${status}</td>
-      <td>${dataHora}</td>
+      <td>${d.lat}</td>
+      <td>${d.lon}</td>
+      <td>${d.dist}</td>
+      <td class="${d.status === "DENTRO" ? "dentro" : "fora"}">${d.status}</td>
+      <td>${d.dataHora}</td>
     `;
 
     tbody.appendChild(tr);
   });
 
-  if (i === 1) {
+  if (dadosFiltrados.length === 0) {
     tbody.innerHTML =
       "<tr><td colspan='6'>Nenhum dado encontrado</td></tr>";
   }
@@ -297,6 +124,3 @@ function exportarCSV() {
   link.click();
 }
 </script>
-
-</body>
-</html>
