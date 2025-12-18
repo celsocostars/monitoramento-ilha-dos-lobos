@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -43,6 +44,16 @@
       background: #fafafa;
     }
 
+    .dentro {
+      color: red;
+      font-weight: bold;
+    }
+
+    .fora {
+      color: green;
+      font-weight: bold;
+    }
+
     @media (max-width: 600px) {
       table {
         font-size: 13px;
@@ -60,14 +71,16 @@
 <table>
   <thead>
     <tr>
+      <th>#</th>
       <th>Latitude</th>
       <th>Longitude</th>
+      <th>Status</th>
       <th>Data / Hora</th>
     </tr>
   </thead>
   <tbody id="tabela-dados">
     <tr>
-      <td colspan="3">Carregando dados...</td>
+      <td colspan="5">Carregando dados...</td>
     </tr>
   </tbody>
 </table>
@@ -92,7 +105,7 @@ firebase.initializeApp(firebaseConfig);
 
 const database = firebase.database();
 
-/* 🔴 Histórico (pushString) */
+/* 🔴 Histórico das leituras */
 const historicoRef = database
   .ref("embarcacoes/esp32_01/historico")
   .limitToLast(20);
@@ -107,7 +120,7 @@ historicoRef.on("value", snapshot => {
 
   if (!snapshot.exists()) {
     tbody.innerHTML =
-      "<tr><td colspan='3'>Sem dados</td></tr>";
+      "<tr><td colspan='5'>Sem dados</td></tr>";
     return;
   }
 
@@ -119,24 +132,33 @@ historicoRef.on("value", snapshot => {
   /* Mais recente primeiro */
   dados.reverse();
 
+  let contador = 1;
+
   dados.forEach(linha => {
 
-    // Formato esperado:
+    // Formato:
     // DATA | LAT | LON | DIST | STATUS
     const partes = linha.split("|");
 
     const dataHora = partes[0]?.trim() || "--";
     const lat = partes[1]?.trim() || "--";
     const lon = partes[2]?.trim() || "--";
+    const status = partes[4]?.trim() || "--";
+
+    const classeStatus =
+      status === "DENTRO" ? "dentro" : "fora";
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
+      <td>${contador}</td>
       <td>${lat}</td>
       <td>${lon}</td>
+      <td class="${classeStatus}">${status}</td>
       <td>${dataHora}</td>
     `;
 
     tbody.appendChild(tr);
+    contador++;
   });
 });
 </script>
