@@ -4,10 +4,9 @@
   <meta charset="UTF-8">
   <title>Monitoramento – Ilha dos Lobos</title>
 
-  <!-- Responsividade -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet (mapa) -->
+  <!-- Leaflet -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -70,6 +69,7 @@
   <div><strong>Longitude:</strong> <span id="lon">--</span></div>
   <div><strong>Distância da borda:</strong> <span id="dist">--</span> m</div>
   <div><strong>Status:</strong> <span id="status">--</span></div>
+  <div><strong>Data/Hora:</strong> <span id="datahora">--</span></div>
 </div>
 
 <div id="map"></div>
@@ -82,65 +82,71 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-  /* =========================================================
-     CONFIGURAÇÃO FIREBASE (AJUSTE COM SEUS DADOS)
-     ========================================================= */
-  const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "ilhalobos-3ab8f.firebaseapp.com",
-    databaseURL: "https://ilhalobos-3ab8f-default-rtdb.firebaseio.com",
-    projectId: "ilhalobos-3ab8f",
-    storageBucket: "ilhalobos-3ab8f.appspot.com",
-    messagingSenderId: "XXXXXX",
-    appId: "XXXXXX"
-  };
+/* =========================================================
+   CONFIGURAÇÃO FIREBASE
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "SUA_API_KEY_AQUI",
+  authDomain: "ilhalobos-3ab8f.firebaseapp.com",
+  databaseURL: "https://ilhalobos-3ab8f-default-rtdb.firebaseio.com",
+  projectId: "ilhalobos-3ab8f",
+  storageBucket: "ilhalobos-3ab8f.appspot.com",
+};
 
-  firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
 
-  const database = firebase.database();
-  const ref = database.ref("embarcacoes/esp32_01");
+const database = firebase.database();
+const ref = database.ref("embarcacoes/esp32_01");
 
-  /* =========================================================
-     MAPA
-     ========================================================= */
-  const map = L.map("map").setView([-29.3389, -49.7153], 13);
+/* =========================================================
+   MAPA
+   ========================================================= */
+const map = L.map("map").setView([-29.3389, -49.7153], 13);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "© OpenStreetMap"
-  }).addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "© OpenStreetMap"
+}).addTo(map);
 
-  const marker = L.marker([-29.3389, -49.7153]).addTo(map);
+const marker = L.marker([-29.3389, -49.7153]).addTo(map);
 
-  /* Círculo da Ilha */
-  L.circle([-29.3389, -49.7153], {
-    radius: 1000,
-    color: "blue",
-    fillOpacity: 0.1
-  }).addTo(map);
+/* Círculo da Ilha */
+L.circle([-29.3389, -49.7153], {
+  radius: 1000,
+  color: "blue",
+  fillOpacity: 0.1
+}).addTo(map);
 
-  /* =========================================================
-     ATUALIZAÇÃO EM TEMPO REAL
-     ========================================================= */
-  ref.on("value", snapshot => {
-    const data = snapshot.val();
-    if (!data) return;
+/* =========================================================
+   ATUALIZAÇÃO EM TEMPO REAL
+   ========================================================= */
+ref.on("value", snapshot => {
+  const data = snapshot.val();
+  if (!data) return;
 
-    document.getElementById("lat").innerText = data.lat.toFixed(6);
-    document.getElementById("lon").innerText = data.lon.toFixed(6);
-    document.getElementById("dist").innerText = data.distancia_borda.toFixed(1);
+  document.getElementById("lat").innerText =
+    Number(data.lat).toFixed(6);
 
-    const statusEl = document.getElementById("status");
-    statusEl.innerText = data.status;
+  document.getElementById("lon").innerText =
+    Number(data.lon).toFixed(6);
 
-    if (data.status === "DENTRO") {
-      statusEl.className = "status-dentro";
-    } else {
-      statusEl.className = "status-fora";
-    }
+  document.getElementById("dist").innerText =
+    Number(data.distancia_borda).toFixed(1);
 
-    marker.setLatLng([data.lat, data.lon]);
-    map.setView([data.lat, data.lon], 15);
-  });
+  document.getElementById("datahora").innerText =
+    data.data_hora || "--";
+
+  const statusEl = document.getElementById("status");
+  statusEl.innerText = data.status;
+
+  if (data.status === "DENTRO") {
+    statusEl.className = "status-dentro";
+  } else {
+    statusEl.className = "status-fora";
+  }
+
+  marker.setLatLng([data.lat, data.lon]);
+  map.setView([data.lat, data.lon], 15);
+});
 </script>
 
 </body>
