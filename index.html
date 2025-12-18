@@ -74,7 +74,7 @@
 
 <div id="map"></div>
 
-<!-- Firebase -->
+<!-- Firebase (compat para simplicidade) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -86,7 +86,7 @@
    CONFIGURAÇÃO FIREBASE
    ========================================================= */
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY_AQUI",
+  apiKey: "AIzaSyBr6MR_uXt8GTuc73w6tSxr5jW6kQwLntY",
   authDomain: "ilhalobos-3ab8f.firebaseapp.com",
   databaseURL: "https://ilhalobos-3ab8f-default-rtdb.firebaseio.com",
   projectId: "ilhalobos-3ab8f",
@@ -96,21 +96,27 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 const database = firebase.database();
-const ref = database.ref("embarcacoes/esp32_01");
+
+/* 🔴 ESTE CAMINHO TEM QUE BATER COM O ESP32 */
+const refDados = database.ref("embarcacoes/esp32_01");
 
 /* =========================================================
    MAPA
    ========================================================= */
-const map = L.map("map").setView([-29.3389, -49.7153], 13);
+const ilhaLat = -29.3389;
+const ilhaLon = -49.7153;
+
+const map = L.map("map").setView([ilhaLat, ilhaLon], 13);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap"
 }).addTo(map);
 
-const marker = L.marker([-29.3389, -49.7153]).addTo(map);
+/* Marcador da embarcação */
+const marker = L.marker([ilhaLat, ilhaLon]).addTo(map);
 
-/* Círculo da Ilha */
-L.circle([-29.3389, -49.7153], {
+/* Círculo de proteção da ilha */
+L.circle([ilhaLat, ilhaLon], {
   radius: 1000,
   color: "blue",
   fillOpacity: 0.1
@@ -119,7 +125,8 @@ L.circle([-29.3389, -49.7153], {
 /* =========================================================
    ATUALIZAÇÃO EM TEMPO REAL
    ========================================================= */
-ref.on("value", snapshot => {
+refDados.on("value", snapshot => {
+
   const data = snapshot.val();
   if (!data) return;
 
@@ -144,8 +151,11 @@ ref.on("value", snapshot => {
     statusEl.className = "status-fora";
   }
 
+  /* Atualiza posição no mapa */
   marker.setLatLng([data.lat, data.lon]);
   map.setView([data.lat, data.lon], 15);
+
+  console.log("Dados atualizados:", data);
 });
 </script>
 
