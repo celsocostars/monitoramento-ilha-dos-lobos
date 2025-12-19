@@ -37,31 +37,41 @@
     .controle {
       background: #e6f2ec;
       padding: 10px;
-      text-align: center;
-      font-size: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
       border-bottom: 1px solid #cce0d6;
     }
 
-    /* Checkbox */
-    .controle label {
-      margin-right: 12px;
-      cursor: pointer;
-    }
-
-    /* Botões */
-    .controle button {
-      margin: 4px 6px;
+    /* Caixa padrão (checkbox e botões) */
+    .caixa-controle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       padding: 6px 12px;
       background: white;
       color: #006633;
       border: 2px solid #006633;
       border-radius: 4px;
-      cursor: pointer;
       font-size: 13px;
+      cursor: pointer;
+      user-select: none;
     }
 
-    .controle button:hover {
+    .caixa-controle input {
+      cursor: pointer;
+    }
+
+    .caixa-controle:hover {
       background: #f0f8f4;
+    }
+
+    .caixa-controle button {
+      all: unset;
+      cursor: pointer;
+      color: #006633;
+      font-size: 13px;
     }
 
     /* ===== TABELA ===== */
@@ -106,7 +116,6 @@
 
     /* ===== IMPRESSÃO ===== */
     @media print {
-
       body {
         background: white;
       }
@@ -116,8 +125,8 @@
       }
 
       header {
-        color: black;
         background: white;
+        color: black;
         border-bottom: 2px solid #006633;
       }
 
@@ -153,13 +162,23 @@
 </header>
 
 <div class="controle">
-  <label>
+
+  <!-- ALERTA -->
+  <label class="caixa-controle">
     <input type="checkbox" id="somenteAlertas">
     Mostrar somente ALERTAS
   </label>
 
-  <button onclick="gerarCSV()">Gerar CSV</button>
-  <button onclick="imprimirPDF()">Imprimir Relatório (PDF)</button>
+  <!-- CSV -->
+  <div class="caixa-controle" onclick="gerarCSV()">
+    <button>Gerar CSV</button>
+  </div>
+
+  <!-- PDF -->
+  <div class="caixa-controle" onclick="imprimirPDF()">
+    <button>Imprimir Relatório (PDF)</button>
+  </div>
+
 </div>
 
 <table>
