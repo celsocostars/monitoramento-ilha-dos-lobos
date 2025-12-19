@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>SIG-REVIS – UERGS</title>
+  <title>SIG-REVIS</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -32,29 +32,18 @@
       opacity: 0.95;
     }
 
-    .filtros {
+    .controle {
       background: white;
-      padding: 8px;
-      font-size: 13px;
-    }
-
-    .filtros label {
-      display: block;
-      margin-bottom: 6px;
-    }
-
-    .filtros input {
-      width: 100%;
-      padding: 5px;
-      font-size: 13px;
-      margin-top: 2px;
+      padding: 10px;
+      text-align: center;
+      font-size: 14px;
+      border-bottom: 1px solid #ddd;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       background: white;
-      margin-top: 5px;
       font-size: 14px;
     }
 
@@ -67,10 +56,18 @@
     th {
       background: #e3f3ee;
       font-weight: bold;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     tr:nth-child(even) {
       background: #fafafa;
+    }
+
+    /* ALERTAS */
+    tr.alerta {
+      background: #ffebee !important;
     }
 
     .dentro {
@@ -101,25 +98,10 @@
   </h2>
 </header>
 
-<div class="filtros">
+<div class="controle">
   <label>
-    <input type="checkbox" id="filtroAlerta">
+    <input type="checkbox" id="somenteAlertas">
     Mostrar somente ALERTAS (DENTRO)
-  </label>
-
-  <label>
-    Filtrar por dia:
-    <input type="date" id="filtroDia">
-  </label>
-
-  <label>
-    Período inicial:
-    <input type="datetime-local" id="filtroInicio">
-  </label>
-
-  <label>
-    Período final:
-    <input type="datetime-local" id="filtroFim">
   </label>
 </div>
 
@@ -155,63 +137,41 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const database = firebase.database();
 
-/* Últimas 10 leituras */
+/* Busca MAIS dados para permitir rolagem */
 const historicoRef = database
   .ref("embarcacoes/esp32_01/historico")
-  .limitToLast(10);
+  .limitToLast(200);
 
-let dadosCache = [];
+let dados = [];
 
 historicoRef.on("value", snapshot => {
 
-  dadosCache = [];
+  dados = [];
 
   snapshot.forEach(child => {
-    dadosCache.push(child.val());
+    dados.push(child.val());
   });
 
-  dadosCache.reverse();
+  dados.reverse(); // mais recente primeiro
   atualizarTabela();
 });
 
-/* Reagir a qualquer filtro */
-document.querySelectorAll("input")
-  .forEach(el => el.addEventListener("change", atualizarTabela));
-
-function converterParaTimestamp(dataHora) {
-  // Formato esperado: DD/MM/YYYY HH:MM:SS
-  const [data, hora] = dataHora.split(" ");
-  const [d, m, a] = data.split("/");
-  return new Date(`${a}-${m}-${d}T${hora}`).getTime();
-}
+document.getElementById("somenteAlertas")
+  .addEventListener("change", atualizarTabela);
 
 function atualizarTabela() {
 
   const tbody = document.getElementById("tabela-dados");
   tbody.innerHTML = "";
 
-  const somenteAlerta =
-    document.getElementById("filtroAlerta").checked;
-
-  const diaSelecionado =
-    document.getElementById("filtroDia").value;
-
-  const inicio =
-    document.getElementById("filtroInicio").value
-      ? new Date(document.getElementById("filtroInicio").value).getTime()
-      : null;
-
-  const fim =
-    document.getElementById("filtroFim").value
-      ? new Date(document.getElementById("filtroFim").value).getTime()
-      : null;
+  const somenteAlertas =
+    document.getElementById("somenteAlertas").checked;
 
   let contador = 1;
 
-  dadosCache.forEach(linha => {
+  dados.forEach(linha => {
 
     const partes = linha.split("|");
 
@@ -221,34 +181,24 @@ function atualizarTabela() {
     const distancia = partes[3]?.trim();
     const status = partes[4]?.trim();
 
-    const timestamp = converterParaTimestamp(dataHora);
-
-    if (somenteAlerta && status !== "DENTRO") return;
-
-    if (diaSelecionado) {
-      const dataLinha = dataHora.split(" ")[0];
-      const [d, m, a] = dataLinha.split("/");
-      if (`${a}-${m}-${d}` !== diaSelecionado) return;
-    }
-
-    if (inicio && timestamp < inicio) return;
-    if (fim && timestamp > fim) return;
-
-    const classeStatus =
-      status === "DENTRO" ? "dentro" : "fora";
+    if (somenteAlertas && status !== "DENTRO")
+      return;
 
     const tr = document.createElement("tr");
+
+    if (status === "DENTRO")
+      tr.classList.add("alerta");
+
     tr.innerHTML = `
-      <td>${contador}</td>
+      <td>${contador++}</td>
       <td>${lat}</td>
       <td>${lon}</td>
       <td>${distancia}</td>
-      <td class="${classeStatus}">${status}</td>
+      <td class="${status === "DENTRO" ? "dentro" : "fora"}">${status}</td>
       <td>${dataHora}</td>
     `;
 
     tbody.appendChild(tr);
-    contador++;
   });
 
   if (contador === 1) {
