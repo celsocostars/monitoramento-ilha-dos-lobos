@@ -36,20 +36,34 @@
     /* ===== CONTROLES ===== */
     .controle {
       background: #e6f2ec;
-      padding: 10px;
+      padding: 8px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
+      flex-wrap: nowrap;              /* NÃO QUEBRA LINHA */
+      gap: 6px;
+      justify-content: flex-start;
+      align-items: center;
       border-bottom: 1px solid #cce0d6;
+      overflow-x: auto;               /* SCROLL HORIZONTAL */
+      -webkit-overflow-scrolling: touch;
     }
 
-    /* Caixa padrão (checkbox e botões) */
+    /* Remove barra feia */
+    .controle::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .controle::-webkit-scrollbar-thumb {
+      background: #006633;
+      border-radius: 4px;
+    }
+
+    /* Caixa padrão */
     .caixa-controle {
+      flex: 0 0 auto;                 /* NÃO REDUZ */
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 12px;
+      padding: 6px 10px;
       background: white;
       color: #006633;
       border: 2px solid #006633;
@@ -57,14 +71,15 @@
       font-size: 13px;
       cursor: pointer;
       user-select: none;
-    }
-
-    .caixa-controle input {
-      cursor: pointer;
+      white-space: nowrap;            /* NÃO QUEBRA TEXTO */
     }
 
     .caixa-controle:hover {
       background: #f0f8f4;
+    }
+
+    .caixa-controle input {
+      cursor: pointer;
     }
 
     .caixa-controle button {
@@ -163,20 +178,17 @@
 
 <div class="controle">
 
-  <!-- ALERTA -->
   <label class="caixa-controle">
     <input type="checkbox" id="somenteAlertas">
     Mostrar somente ALERTAS
   </label>
 
-  <!-- CSV -->
   <div class="caixa-controle" onclick="gerarCSV()">
-    <button>Gerar CSV</button>
+    Gerar CSV
   </div>
 
-  <!-- PDF -->
   <div class="caixa-controle" onclick="imprimirPDF()">
-    <button>Imprimir Relatório (PDF)</button>
+    Imprimir Relatório (PDF)
   </div>
 
 </div>
@@ -204,7 +216,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-/* ===== FIREBASE ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyBr6MR_uXt8GTuc73w6tSxr5jW6kQwLntY",
   authDomain: "ilhalobos-3ab8f.firebaseapp.com",
@@ -223,9 +234,7 @@ let dados = [];
 
 historicoRef.on("value", snapshot => {
   dados = [];
-  snapshot.forEach(child => {
-    dados.push(child.val());
-  });
+  snapshot.forEach(child => dados.push(child.val()));
   dados.reverse();
   atualizarTabela();
 });
@@ -233,9 +242,7 @@ historicoRef.on("value", snapshot => {
 document.getElementById("somenteAlertas")
   .addEventListener("change", atualizarTabela);
 
-/* ===== TABELA ===== */
 function atualizarTabela() {
-
   const tbody = document.getElementById("tabela-dados");
   tbody.innerHTML = "";
 
@@ -245,7 +252,6 @@ function atualizarTabela() {
   let contador = 1;
 
   dados.forEach(linha => {
-
     const partes = linha.split("|");
     const status = partes[4]?.trim();
 
@@ -267,9 +273,7 @@ function atualizarTabela() {
   });
 }
 
-/* ===== CSV ===== */
 function gerarCSV() {
-
   let csv = "N,Latitude,Longitude,Distancia(m),Status,Data/Hora\n";
   const somenteAlertas =
     document.getElementById("somenteAlertas").checked;
@@ -277,27 +281,21 @@ function gerarCSV() {
   let n = 1;
 
   dados.forEach(linha => {
-
     const partes = linha.split("|");
     const status = partes[4]?.trim();
-
     if (somenteAlertas && status !== "DENTRO") return;
-
     csv += `${n++},${partes[1]},${partes[2]},${partes[3]},${status},${partes[0]}\n`;
   });
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
   a.download = "SIG-REVIS_historico.csv";
   a.click();
-
   URL.revokeObjectURL(url);
 }
 
-/* ===== PDF ===== */
 function imprimirPDF() {
   window.print();
 }
