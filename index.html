@@ -17,26 +17,20 @@
     header {
       background: #006633;
       color: white;
-      padding: 10px 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      padding: 14px 12px;
     }
 
-    header img {
-      height: 38px;
-    }
-
-    .titulo h1 {
+    header h1 {
       margin: 0;
-      font-size: 18px;
+      font-size: 20px;
     }
 
-    .titulo h2 {
-      margin: 4px 0 0 0;
+    header h2 {
+      margin: 6px 0 0 0;
       font-size: 13px;
       font-weight: normal;
       opacity: 0.95;
+      line-height: 1.3;
     }
 
     /* ===== CONTROLES ===== */
@@ -48,19 +42,26 @@
       border-bottom: 1px solid #cce0d6;
     }
 
+    /* Checkbox */
+    .controle label {
+      margin-right: 12px;
+      cursor: pointer;
+    }
+
+    /* Botões */
     .controle button {
-      margin-left: 10px;
+      margin: 4px 6px;
       padding: 6px 12px;
-      background: #006633;
-      color: white;
-      border: none;
+      background: white;
+      color: #006633;
+      border: 2px solid #006633;
       border-radius: 4px;
       cursor: pointer;
       font-size: 13px;
     }
 
     .controle button:hover {
-      background: #004d26;
+      background: #f0f8f4;
     }
 
     /* ===== TABELA ===== */
@@ -81,6 +82,7 @@
       background: #e6f2ec;
       position: sticky;
       top: 0;
+      z-index: 1;
     }
 
     tr:nth-child(even) {
@@ -102,11 +104,15 @@
       font-weight: bold;
     }
 
-    /* ===== IMPRESSÃO / PDF ===== */
+    /* ===== IMPRESSÃO ===== */
     @media print {
 
       body {
         background: white;
+      }
+
+      .controle {
+        display: none;
       }
 
       header {
@@ -115,17 +121,8 @@
         border-bottom: 2px solid #006633;
       }
 
-      header img {
-        filter: grayscale(100%);
-      }
-
-      .controle {
-        display: none;
-      }
-
       th {
         background: #f0f0f0 !important;
-        color: black;
       }
 
       tr.alerta {
@@ -136,20 +133,23 @@
         margin: 15mm;
       }
     }
+
+    @media (max-width: 600px) {
+      table {
+        font-size: 13px;
+      }
+    }
   </style>
 </head>
 
 <body>
 
 <header>
-  <img src="https://www.uergs.edu.br/upload/arquivos/202003/16115809-logo-uergs-branco.png" alt="UERGS">
-  <div class="titulo">
-    <h1>SIG-REVIS</h1>
-    <h2>
-      Geofencing para Controle de Aproximação de Embarcações<br>
-      às Áreas Marinhas Protegidas
-    </h2>
-  </div>
+  <h1>SIG-REVIS</h1>
+  <h2>
+    Geofencing para Controle de Aproximação de Embarcações<br>
+    às Áreas Marinhas Protegidas – UERGS
+  </h2>
 </header>
 
 <div class="controle">
