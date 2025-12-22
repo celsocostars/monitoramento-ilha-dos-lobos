@@ -60,15 +60,6 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    .controle::-webkit-scrollbar {
-      height: 4px;
-    }
-
-    .controle::-webkit-scrollbar-thumb {
-      background: #006633;
-      border-radius: 4px;
-    }
-
     .caixa-controle {
       flex: 0 0 auto;
       display: flex;
@@ -229,6 +220,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
+/* ===== FIREBASE ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyBr6MR_uXt8GTuc73w6tSxr5jW6kQwLntY",
   authDomain: "ilhalobos-3ab8f.firebaseapp.com",
@@ -239,22 +231,26 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-/* ===== SEM LIMITE DE REGISTROS ===== */
+/* ===== TODOS OS REGISTROS ===== */
 const historicoRef = database.ref("embarcacoes/esp32_01/historico");
 
 let dados = [];
 
 historicoRef.on("value", snapshot => {
   dados = [];
-  snapshot.forEach(child => dados.push(child.val()));
-  dados.reverse();
+  snapshot.forEach(child => {
+    dados.push(child.val());
+  });
+  dados.reverse(); // mais recentes no topo
   atualizarTabela();
 });
 
 document.getElementById("somenteAlertas")
   .addEventListener("change", atualizarTabela);
 
+/* ===== TABELA ===== */
 function atualizarTabela() {
+
   const tbody = document.getElementById("tabela-dados");
   tbody.innerHTML = "";
 
@@ -264,20 +260,25 @@ function atualizarTabela() {
   let contador = 1;
 
   dados.forEach(linha => {
-    const partes = linha.split("|");
-    const status = partes[4]?.trim();
 
-    if (somenteAlertas && status !== "DENTRO") return;
+    const partes = linha.split("|");
+
+    const statusRaw = partes[4] ? partes[4].trim().toUpperCase() : "";
+
+    const ehAlerta =
+      statusRaw === "DENTRO" || statusRaw === "ENTROU";
+
+    if (somenteAlertas && !ehAlerta) return;
 
     const tr = document.createElement("tr");
-    if (status === "DENTRO") tr.classList.add("alerta");
+    if (ehAlerta) tr.classList.add("alerta");
 
     tr.innerHTML = `
       <td>${contador++}</td>
       <td>${partes[1]}</td>
       <td>${partes[2]}</td>
       <td>${partes[3]}</td>
-      <td class="${status === "DENTRO" ? "dentro" : "fora"}">${status}</td>
+      <td class="${ehAlerta ? "dentro" : "fora"}">${statusRaw}</td>
       <td>${partes[0]}</td>
     `;
 
@@ -285,29 +286,41 @@ function atualizarTabela() {
   });
 }
 
+/* ===== CSV ===== */
 function gerarCSV() {
+
   let csv = "N,Latitude,Longitude,Distancia(m),Status,Data/Hora\n";
+
   const somenteAlertas =
     document.getElementById("somenteAlertas").checked;
 
   let n = 1;
 
   dados.forEach(linha => {
+
     const partes = linha.split("|");
-    const status = partes[4]?.trim();
-    if (somenteAlertas && status !== "DENTRO") return;
-    csv += `${n++},${partes[1]},${partes[2]},${partes[3]},${status},${partes[0]}\n`;
+    const statusRaw = partes[4] ? partes[4].trim().toUpperCase() : "";
+
+    const ehAlerta =
+      statusRaw === "DENTRO" || statusRaw === "ENTROU";
+
+    if (somenteAlertas && !ehAlerta) return;
+
+    csv += `${n++},${partes[1]},${partes[2]},${partes[3]},${statusRaw},${partes[0]}\n`;
   });
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
   a.href = url;
   a.download = "SIG-REVIS_historico.csv";
   a.click();
+
   URL.revokeObjectURL(url);
 }
 
+/* ===== PDF ===== */
 function imprimirPDF() {
   window.print();
 }
