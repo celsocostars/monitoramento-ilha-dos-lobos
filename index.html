@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>SIG-REVIS – UERGS</title>
+  <title>SIG-REVIS – UERGS / GEMARS</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -33,45 +33,58 @@
       line-height: 1.3;
     }
 
+    header h3 {
+      margin: 6px 0 0 0;
+      font-size: 12px;
+      font-weight: normal;
+      opacity: 0.9;
+    }
+
     /* ===== CONTROLES ===== */
     .controle {
       background: #e6f2ec;
-      padding: 10px;
+      padding: 8px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
+      flex-wrap: nowrap;
+      gap: 6px;
+      align-items: center;
       border-bottom: 1px solid #cce0d6;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
-    /* Caixa padrão (checkbox e botões) */
+    .controle::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .controle::-webkit-scrollbar-thumb {
+      background: #006633;
+      border-radius: 4px;
+    }
+
+    /* Caixa padrão */
     .caixa-controle {
+      flex: 0 0 auto;
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 12px;
+      padding: 6px 10px;
       background: white;
       color: #006633;
       border: 2px solid #006633;
       border-radius: 4px;
       font-size: 13px;
       cursor: pointer;
+      white-space: nowrap;
       user-select: none;
-    }
-
-    .caixa-controle input {
-      cursor: pointer;
     }
 
     .caixa-controle:hover {
       background: #f0f8f4;
     }
 
-    .caixa-controle button {
-      all: unset;
+    .caixa-controle input {
       cursor: pointer;
-      color: #006633;
-      font-size: 13px;
     }
 
     /* ===== TABELA ===== */
@@ -159,24 +172,24 @@
     Geofencing para Controle de Aproximação de Embarcações<br>
     às Áreas Marinhas Protegidas – UERGS
   </h2>
+  <h3>
+    GEMARS – Grupo de Estudos de Mamíferos Aquáticos do Rio Grande do Sul
+  </h3>
 </header>
 
 <div class="controle">
 
-  <!-- ALERTA -->
   <label class="caixa-controle">
     <input type="checkbox" id="somenteAlertas">
     Mostrar ALERTAS
   </label>
 
-  <!-- CSV -->
   <div class="caixa-controle" onclick="gerarCSV()">
-    <button>Gerar CSV</button>
+    Gerar CSV
   </div>
 
-  <!-- PDF -->
   <div class="caixa-controle" onclick="imprimirPDF()">
-    <button>Imprimir Relatório (PDF)</button>
+    Imprimir Relatório (PDF)
   </div>
 
 </div>
@@ -223,9 +236,7 @@ let dados = [];
 
 historicoRef.on("value", snapshot => {
   dados = [];
-  snapshot.forEach(child => {
-    dados.push(child.val());
-  });
+  snapshot.forEach(child => dados.push(child.val()));
   dados.reverse();
   atualizarTabela();
 });
